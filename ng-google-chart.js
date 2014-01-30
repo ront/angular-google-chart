@@ -77,13 +77,23 @@
                 restrict: 'A',
                 scope: {
                     chart: '=chart',
+                    chartRef: '@',
                     onReady: '&',
                     select: '&'
                 },
                 link: function ($scope, $elm, $attr) {
+
+                    if ($scope.chartRef) {
+                        $scope.$parent.$watch($scope.chartRef, function (obj) {
+                            if (obj) {
+                                drawAsync(obj);
+                            }
+                        }, true); // true is for deep object equality checking
+                    }
+
                     // Watches, to refresh the chart when its data, title or dimensions change
                     $scope.$watch('chart', function () {
-                        drawAsync();
+                        drawAsync($scope.chart);
                     }, true); // true is for deep object equality checking
 
                     // Redraw the chart if the window is resized
@@ -96,18 +106,18 @@
                         });
                     });
 
-                    function applyFormat(formatType, formatClass, dataTable) {
+                    function applyFormat(aChart, formatType, formatClass, dataTable) {
 
-                        if (typeof($scope.chart.formatters[formatType]) != 'undefined') {
+                        if (typeof(aChart.formatters[formatType]) != 'undefined') {
                             if ($scope.formatters[formatType] == null) {
                                 $scope.formatters[formatType] = new Array();
 
                                 if (formatType === 'color') {
-                                    for (var cIdx = 0; cIdx < $scope.chart.formatters[formatType].length; cIdx++) {
+                                    for (var cIdx = 0; cIdx < aChart.formatters[formatType].length; cIdx++) {
                                         var colorFormat = new formatClass();
 
-                                        for (var i = 0; i < $scope.chart.formatters[formatType][cIdx].formats.length; i++) {
-                                            var data = $scope.chart.formatters[formatType][cIdx].formats[i];
+                                        for (var i = 0; i < aChart.formatters[formatType][cIdx].formats.length; i++) {
+                                            var data = aChart.formatters[formatType][cIdx].formats[i];
 
                                             if (typeof(data.fromBgColor) != 'undefined' && typeof(data.toBgColor) != 'undefined')
                                                 colorFormat.addGradientRange(data.from, data.to, data.color, data.fromBgColor, data.toBgColor);
@@ -119,9 +129,9 @@
                                     }
                                 } else {
 
-                                    for (var i = 0; i < $scope.chart.formatters[formatType].length; i++) {
+                                    for (var i = 0; i < aChart.formatters[formatType].length; i++) {
                                         $scope.formatters[formatType].push(new formatClass(
-                                            $scope.chart.formatters[formatType][i])
+                                            aChart.formatters[formatType][i])
                                         );
                                     }
                                 }
@@ -130,19 +140,19 @@
 
                             //apply formats to dataTable
                             for (var i = 0; i < $scope.formatters[formatType].length; i++) {
-                                if ($scope.chart.formatters[formatType][i].columnNum < dataTable.getNumberOfColumns())
-                                    $scope.formatters[formatType][i].format(dataTable, $scope.chart.formatters[formatType][i].columnNum);
+                                if (aChart.formatters[formatType][i].columnNum < dataTable.getNumberOfColumns())
+                                    $scope.formatters[formatType][i].format(dataTable, aChart.formatters[formatType][i].columnNum);
                             }
 
 
                             //Many formatters require HTML tags to display special formatting
                             if (formatType === 'arrow' || formatType === 'bar' || formatType === 'color')
-                                $scope.chart.options.allowHtml = true;
+                                aChart.options.allowHtml = true;
                         }
                     }
 
-                    function draw() {
-                        if (!draw.triggered && ($scope.chart != undefined)) {
+                    function draw(aChart) {
+                        if (!draw.triggered && (aChart != undefined)) {
                             draw.triggered = true;
                             $timeout(function () {
                                 draw.triggered = false;
@@ -151,34 +161,34 @@
                                     $scope.formatters = {};
 
                                 var dataTable;
-                                if ($scope.chart.data instanceof google.visualization.DataTable)
-                                    dataTable = $scope.chart.data;
-                                else if (Array.isArray($scope.chart.data))
-                                    dataTable = google.visualization.arrayToDataTable($scope.chart.data);
+                                if (aChart.data instanceof google.visualization.DataTable)
+                                    dataTable = aChart.data;
+                                else if (Array.isArray(aChart.data))
+                                    dataTable = google.visualization.arrayToDataTable(aChart.data);
                                 else
-                                    dataTable = new google.visualization.DataTable($scope.chart.data, 0.5);
+                                    dataTable = new google.visualization.DataTable(aChart.data, 0.5);
 
-                                if (typeof($scope.chart.formatters) != 'undefined') {
-                                    applyFormat("number", google.visualization.NumberFormat, dataTable);
-                                    applyFormat("arrow", google.visualization.ArrowFormat, dataTable);
-                                    applyFormat("date", google.visualization.DateFormat, dataTable);
-                                    applyFormat("bar", google.visualization.BarFormat, dataTable);
-                                    applyFormat("color", google.visualization.ColorFormat, dataTable);
+                                if (typeof(aChart.formatters) != 'undefined') {
+                                    applyFormat(aChart, "number", google.visualization.NumberFormat, dataTable);
+                                    applyFormat(aChart, "arrow", google.visualization.ArrowFormat, dataTable);
+                                    applyFormat(aChart, "date", google.visualization.DateFormat, dataTable);
+                                    applyFormat(aChart, "bar", google.visualization.BarFormat, dataTable);
+                                    applyFormat(aChart, "color", google.visualization.ColorFormat, dataTable);
                                 }
 
 
                                 var chartWrapperArgs = {
-                                    chartType: $scope.chart.type,
+                                    chartType: aChart.type,
                                     dataTable: dataTable,
-                                    view: $scope.chart.view,
-                                    options: $scope.chart.options,
+                                    view: aChart.view,
+                                    options: aChart.options,
                                     containerId: $elm[0]
                                 };
 
                                 if ($scope.chartWrapper == null) {
                                     $scope.chartWrapper = new google.visualization.ChartWrapper(chartWrapperArgs);
                                     google.visualization.events.addListener($scope.chartWrapper, 'ready', function () {
-                                        $scope.chart.displayed = true;
+                                        aChart.displayed = true;
                                         $scope.$apply(function (scope) {
                                             scope.onReady({chartWrapper: scope.chartWrapper});
                                         });
@@ -196,10 +206,10 @@
                                     });
                                 }
                                 else {
-                                    $scope.chartWrapper.setChartType($scope.chart.type);
+                                    $scope.chartWrapper.setChartType(aChart.type);
                                     $scope.chartWrapper.setDataTable(dataTable);
-                                    $scope.chartWrapper.setView($scope.chart.view);
-                                    $scope.chartWrapper.setOptions($scope.chart.options);
+                                    $scope.chartWrapper.setView(aChart.view);
+                                    $scope.chartWrapper.setOptions(aChart.options);
                                 }
 
 
@@ -210,9 +220,9 @@
                         }
                     }
 
-                    function drawAsync() {
+                    function drawAsync(aChart) {
                         googleChartApiPromise.then(function () {
-                            draw();
+                            draw(aChart);
                         })
                     }
                 }
@@ -226,3 +236,5 @@
         }]);
 
 })(document, window);
+
+
