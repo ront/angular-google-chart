@@ -136,7 +136,7 @@
 
                     function applyFormat(aChart, formatType, FormatClass, dataTable) {
                         var i;
-                        if (typeof(aChart.formatters[formatType]) != 'undefined') {
+                        if (typeof(aChart.formatters[formatType]) !== 'undefined') {
                             if (!angular.equals(aChart.formatters[formatType], $scope.oldChartFormatters[formatType])) {
                                 $scope.oldChartFormatters[formatType] = aChart.formatters[formatType];
                                 $scope.formatters[formatType] = [];
@@ -148,10 +148,12 @@
                                         for (i = 0; i < aChart.formatters[formatType][cIdx].formats.length; i++) {
                                             var data = aChart.formatters[formatType][cIdx].formats[i];
 
-                                            if (typeof(data.fromBgColor) != 'undefined' && typeof(data.toBgColor) != 'undefined')
+                                            if (typeof(data.fromBgColor) !== 'undefined' && typeof(data.toBgColor) !== 'undefined') {
                                                 colorFormat.addGradientRange(data.from, data.to, data.color, data.fromBgColor, data.toBgColor);
-                                            else
+                                            }
+                                            else {
                                                 colorFormat.addRange(data.from, data.to, data.color, data.bgcolor);
+                                            }
                                         }
 
                                         $scope.formatters[formatType].push(colorFormat);
@@ -169,14 +171,16 @@
 
                             //apply formats to dataTable
                             for (var j = 0; j < $scope.formatters[formatType].length; j++) {
-                                if (aChart.formatters[formatType][j].columnNum < dataTable.getNumberOfColumns())
+                                if (aChart.formatters[formatType][j].columnNum < dataTable.getNumberOfColumns()) {
                                     $scope.formatters[formatType][j].format(dataTable, aChart.formatters[formatType][j].columnNum);
+                                }
                             }
 
 
                             //Many formatters require HTML tags to display special formatting
-                            if (formatType === 'arrow' || formatType === 'bar' || formatType === 'color')
+                            if (formatType === 'arrow' || formatType === 'bar' || formatType === 'color') {
                                 aChart.options.allowHtml = true;
+                            }
                         }
                     }
 
@@ -185,12 +189,12 @@
                             draw.triggered = true;
                             $timeout(function () {
 
-                                if (typeof ($scope.chartWrapper) == 'undefined') {
+                                if (typeof ($scope.chartWrapper) === 'undefined') {
                                     var chartWrapperArgs = {
-                                        chartType: $scope.chart.type,
-                                        dataTable: $scope.chart.data,
-                                        view: $scope.chart.view,
-                                        options: $scope.chart.options,
+                                        chartType: aChart.type,
+                                        dataTable: aChart.data,
+                                        view: aChart.view,
+                                        options: aChart.options,
                                         containerId: $elm[0]
                                     };
 
@@ -202,7 +206,7 @@
                                         });
                                     });
                                     google.visualization.events.addListener($scope.chartWrapper, 'error', function (err) {
-                                        console.log("Chart not displayed due to error: " + err.message + ". Full error object follows.");
+                                        console.log('Chart not displayed due to error: ' + err.message + '. Full error object follows.');
                                         console.log(err);
                                     });
                                     google.visualization.events.addListener($scope.chartWrapper, 'select', function () {
@@ -227,19 +231,20 @@
                                     $scope.chartWrapper.setOptions(aChart.options);
                                 }
 
-                                if (typeof($scope.formatters) === 'undefined')
+                                if (typeof($scope.formatters) === 'undefined') {
                                     $scope.formatters = {};
-
-                                if (typeof($scope.chart.formatters) != 'undefined') {
-                                    applyFormat("number", google.visualization.NumberFormat, $scope.chartWrapper.getDataTable());
-                                    applyFormat("arrow", google.visualization.ArrowFormat, $scope.chartWrapper.getDataTable());
-                                    applyFormat("date", google.visualization.DateFormat, $scope.chartWrapper.getDataTable());
-                                    applyFormat("bar", google.visualization.BarFormat, $scope.chartWrapper.getDataTable());
-                                    applyFormat("color", google.visualization.ColorFormat, $scope.chartWrapper.getDataTable());
                                 }
 
-                                var customFormatters = $scope.chart.customFormatters;
-                                if (typeof(customFormatters) != 'undefined') {
+                                if (typeof(aChart.formatters) !== 'undefined') {
+                                    applyFormat(aChart, 'number', google.visualization.NumberFormat, $scope.chartWrapper.getDataTable());
+                                    applyFormat(aChart, 'arrow', google.visualization.ArrowFormat, $scope.chartWrapper.getDataTable());
+                                    applyFormat(aChart, 'date', google.visualization.DateFormat, $scope.chartWrapper.getDataTable());
+                                    applyFormat(aChart, 'bar', google.visualization.BarFormat, $scope.chartWrapper.getDataTable());
+                                    applyFormat(aChart, 'color', google.visualization.ColorFormat, $scope.chartWrapper.getDataTable());
+                                }
+
+                                var customFormatters = aChart.customFormatters;
+                                if (typeof(customFormatters) !== 'undefined') {
                                     for (var name in customFormatters) {
                                         applyFormat(name, customFormatters[name], $scope.chartWrapper.getDataTable());
                                     }
@@ -251,7 +256,7 @@
                                     draw.triggered = false;
                                 });
                             }, 0, true);
-                        } else if ($scope.chart !== undefined) {
+                        } else if (aChart !== undefined) {
                             $timeout.cancel(draw.recallTimeout);
                             draw.recallTimeout = $timeout(draw, 10);
                         }
